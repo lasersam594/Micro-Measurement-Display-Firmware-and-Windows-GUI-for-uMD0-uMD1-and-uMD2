@@ -5,4 +5,7 @@ wirelessly to an Android device using additional hardware and firmware, NOT INCL
 optics, as well as optional frequency analysis of the displacement data.  µMD also supports straightness and angle measurements with appropriate optics and allows for their parameters to be entered if not standard.
 Environmental compensation parameters (temperature, pressure, humidity) may be entered manually.  Up to three measurement axes are supported.
 
-For more information, please see the links in the uMD0, uMD1, or uMD2 repositories.  For general information on the uMD GUI they are all similar; for more on a specific application, select the most apprpriate.
+While the source code (written in Microsoft Visual Basic) for uMD is neither open source or public, it may be provided upon request for serious applcations.  But I will not be expected to provide enhancements or even minor bug fixes, in part because
+I have now clue how it works at this point.  I backed up my brain quite a while ago and lost the passwords. ;( ;-)
+
+For more information, please see the links in the uMD0, uMD1, or uMD2 repositories.  For general information on the uMD GUI, they are all similar; for specifics, select the one most apprpriate for application.

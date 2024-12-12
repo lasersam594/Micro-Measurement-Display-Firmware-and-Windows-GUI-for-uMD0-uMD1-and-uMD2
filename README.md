@@ -24,4 +24,4 @@ The following are the required firmware which interfaces with the µMD GUI via U
 * Micro Measurement Display 2 (µMD2) firmware running on the Teensy 4.0 (SG-µMD2 PCB) for high performance homodyne interferometers, encoders, and other devices producing Quad A/B signals; and heterodyne interferometers using two
    frequency HeNe lasers.  For more information, please see: https://repairfaq.org/sam/uMD2/uMD2.htm .
 
-Copyright (c) Samuel M. Goldwasser and Jan Beck, 1994-2024, all rights reserved.
+Copyright® Samuel M. Goldwasser and Jan Beck, 1994-2024, all rights reserved.

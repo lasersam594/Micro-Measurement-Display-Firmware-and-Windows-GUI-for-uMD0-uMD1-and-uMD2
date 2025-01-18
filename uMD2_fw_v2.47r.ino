@@ -54,6 +54,7 @@
 // V2.47o Optimized OLED frequency counter update.
 // V2.47p Optimized OLED sn and DISP update.
 // V2.47q Ditto.
+// V2.47r Ditto.  Changed register assignments in assembly code to get around possible compiler glitch.
 
 #define FirmwareVersion 247  // Firmware version (x100) used by OLED and GUI About.
 
@@ -61,8 +62,8 @@
 
 #define Multiplier 1           // Integer counts/cycle.  1 for rising edge; 2 for double clocking.  Do not mess with this - used for TMR_CTRL_CM value.
 
-#define Interpolation 1        // O for none, 1 for enabled
-#define REF_Sync 1             // Required for interpolation
+#define Interpolation 0        // O for none, 1 for enabled
+#define REF_Sync 0             // Required for interpolation
 
 #define OLED 1                 // OLED display of banner and version if defined
 #define OLED_Displacement 1    // OLED display of sn, Disp1, Disp2, Disp3 if defined
@@ -126,6 +127,7 @@ float   REF_Frequency = 0;
 float   REF_Frequency_Old = 0;
 float   REF_Frequency_New = 0;
 float   REF_Frequency_Average = 0;
+
 float   OLED_REF_Frequency = 0;
 float   OLED_REF_Frequency_save = 0;
 
@@ -347,7 +349,7 @@ void setup()
 #ifdef OLED
   // Initialize and clear display
   u8x8.begin();
- // u8x8.setPowerSave(0);
+  u8x8.setPowerSave(0);
 
   // Banner and sequence number display
   u8x8.setFont(u8x8_font_chroma48medium8_r);  // Default font (thin)
@@ -395,6 +397,9 @@ void setup()
 #ifdef OLED_Displacement
 
   u8x8.drawString(0, 2, "Seq#:        ");
+
+#if OLED_REF != 2
+
   u8x8.drawString(0, 4, "Disp1:");
 
   if (Heterodyne > 1)
@@ -402,9 +407,11 @@ void setup()
     u8x8.drawString(0, 5, "Disp2:");
     u8x8.drawString(0, 6, "Disp3:");
   }
+
+#endif
 #endif
 
-  QuadTimer_Setup ();
+  QuadTimer_Setup ();                    // Initialize counters for REF, MEAS1, MEAS2, MEAS3
 
   usbTimer.begin(USBSender, 1000);       // Send USB data every 1000 microseconds
   usbTimer.priority(200);                // Lower numbers are higher priority, with 0 the highest and 255 the lowest. Most other interrupts default to 128
@@ -812,14 +819,13 @@ interrupts();
 void loop()
 {
 #ifdef OLED
-
 #ifdef OLED_REF
-noInterrupts();
+  noInterrupts();
   REF_Frequency = REF_Frequency_Total;
   REF_Frequency_Average = REF_Frequency / REF_Frequency_Total_Count;
   REF_Frequency_Total_Count = 0;
   REF_Frequency_Total = 0;
-interrupts();
+  interrupts();
    
   if (REF_Frequency_Average != OLED_REF_Frequency_save)
     {
@@ -849,46 +855,46 @@ interrupts();
             {
               sprintf(REF_oled_buffer, "%.5f", REF_Frequency_Average / 1000);
             }
-//          update_OLED_X2 (3, 3, 8, REF_oled_buffer, old_REF_oled_buffer);
-          update_OLED_X2 (0, 3, 8, "0.123456", old_REF_oled_buffer);
-
+          update_OLED_X2 (0, 3, 8, REF_oled_buffer, old_REF_oled_buffer);
           u8x8.setFont(u8x8_font_chroma48medium8_r);         // Restore normal font
         }
    }
 #endif
 
 #ifdef OLED_Displacement
+
   sprintf(sn_oled_buffer, "%li", sn);
   update_OLED_X1 (6, 2, 8, sn_oled_buffer, old_sn_oled_buffer);
 
+#if OLED_REF != 2
+
   OLED_DISP1 = displacement1;
   if (OLED_DISP1 != OLED_DISP1_save)
-  {
-    OLED_DISP1_save = OLED_DISP1;
-    sprintf(DISP1_oled_buffer, "%li", OLED_DISP1);
-    update_OLED_X1 (7, 4, 8, DISP1_oled_buffer, old_DISP1_oled_buffer);
-  }
-#endif
+    {
+      OLED_DISP1_save = OLED_DISP1;
+      sprintf(DISP1_oled_buffer, "%li", OLED_DISP1);
+      update_OLED_X1 (7, 4, 8, DISP1_oled_buffer, old_DISP1_oled_buffer);
+    }
 
-#ifdef OLED_Displacement
   if (Heterodyne > 1)
   {
     OLED_DISP2 = displacement2;
     if (OLED_DISP2 != OLED_DISP2_save)
-    {
-      OLED_DISP2_save = OLED_DISP2;
-      sprintf(DISP2_oled_buffer, "%li", OLED_DISP2);
-      update_OLED_X1 (7, 5, 8, DISP2_oled_buffer, old_DISP2_oled_buffer);
-    }
+      {
+        OLED_DISP2_save = OLED_DISP2;
+        sprintf(DISP2_oled_buffer, "%li", OLED_DISP2);
+        update_OLED_X1 (7, 5, 8, DISP2_oled_buffer, old_DISP2_oled_buffer);
+      }
 
     OLED_DISP3 = displacement3;
     if (OLED_DISP3 != OLED_DISP3_save)
-    {
-      OLED_DISP3_save = OLED_DISP3;
-      sprintf(DISP3_oled_buffer, "%li", OLED_DISP3);
-      update_OLED_X1 (7, 6, 8, DISP3_oled_buffer, old_DISP3_oled_buffer);
-    }
+      {
+        OLED_DISP3_save = OLED_DISP3;
+        sprintf(DISP3_oled_buffer, "%li", OLED_DISP3);
+        update_OLED_X1 (7, 6, 8, DISP3_oled_buffer, old_DISP3_oled_buffer);
+      }
   }
+#endif
 #endif
 #endif
 
@@ -1109,12 +1115,12 @@ void REF_Sync_Assembly_Block () {
                "ldr    r8, =0x42004008 \n\t" // load address of GPIO6_PSR into r8
                "mov    r9, %1          \n\t" // copy address of array into r9, index = 0
                "mov    r10, r9         \n\t" // copy r9 to r10 to start on end-of-loop-condition
-               "add    r10, #3996      \n\t" // Uend-of-loop condition. we want Waveform_Length 4 byte values, so the end is at 4000 - 4 = 3996 bytes after the beginning of the array
+               "add    r10, #3996      \n\t" // end-of-loop condition. we want Waveform_Length 4 byte values, so the end is at 4000 - 4 = 3996 bytes after the beginning of the array
 
-               "mov    r5, #0          \n\t" // reset error code to 0
-               "str    r5, %0          \n\t" //
-               "mov    r5, #0x400      \n\t" // load bit to test in r5
-               "mov    r4, #100        \n\t" // load loop count in r4
+               "mov    r12, #0          \n\t" // reset error code to 0
+               "str    r12, %0          \n\t" //
+               "mov    r12, #0x400      \n\t" // load bit to test in r5
+               "mov    r11, #100        \n\t" // load loop count in r4
                
 #ifndef REF_Sync
                "b REFEdgeFound1         \n\t" // Do NOT sync on REF edges//
@@ -1124,16 +1130,16 @@ void REF_Sync_Assembly_Block () {
 
     "REFSyncLoop:                      \n\t" //
                "ldr    r6, [r8]        \n\t" // Load value of GPIO_PSR into r6
-               "tst    r6, r5          \n\t" // Check GPIO_PSR REF counter clock bit
+               "tst    r6, r12          \n\t" // Check GPIO_PSR REF counter clock bit
                "bne    REFEdgeFound1   \n\t" // End if REF clock high
-               "subs   r4, r4, #1      \n\t" //
+               "subs   r11, r11, #1      \n\t" //
                "bne    REFSyncLoop     \n\t" // Do it again if loop count not 0
 
     "NoREFEdgeFound1:                  \n\t" // No high REF clock detected
-               "ldrh   r5, [r1], #0    \n\t" // hold TMR2 by reading TMR2_CNTR0 (REF)
-               "ldrh   r5, [r3], #0    \n\t" // hold TMR4 by reading TMR4_CNTR0 (MEAS1)
-               "movw   r5, #12345      \n\t" // load error code - 12345 for now
-               "str    r5, %0          \n\t"
+               "ldrh   r12, [r1], #0    \n\t" // hold TMR2 by reading TMR2_CNTR0 (REF)
+               "ldrh   r12, [r3], #0    \n\t" // hold TMR4 by reading TMR4_CNTR0 (MEAS1)
+               "movw   r12, #12345      \n\t" // load error code - 12345 for now
+               "str    r12, %0          \n\t"
                "b      Abort           \n\t" // Skip gpioData capture if no REFs
                        
     "REFEdgeFound1:                    \n\t" // Breakout
@@ -1153,6 +1159,6 @@ void REF_Sync_Assembly_Block () {
 
                : "=m" (No_REF)         // output operand list
                : "r" (gpioData)              // input operand list
-               : "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r8", "r9", "r10"
+               : "r0", "r1", "r2", "r3", "r6", "r8", "r9", "r10", "r11", "r12"
               );
 }

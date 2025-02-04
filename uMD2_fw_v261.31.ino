@@ -40,10 +40,6 @@
 // provides sub-nm-scale resolution and precision (accuracy subject to enbironmental compensation) for slew rates of
 // around 0.01 mm/second or less and normal 79 or 158 nm resolution (depending on interferometer optics) above that.
 
-#define Diagnostics 0           // 0 normal uMD2.
-                                // 1 for diagnostics inside uMD GUI but display may be strange with some data in axes 2 and 3 fields. ;-)
-                                // 2 for extended printout using Serial Monitor or terminal program but incompatible with uMD GUI.
-
 #define Heterodyne 1            // Set to the number of axes for heterodyne, sample rate always 1 kHz.
 
 #define Interpolation 1         // O for none, 1 for enabled.
@@ -56,13 +52,17 @@
 // No user or hacker sericeable parts beyond this point. ;-)
 
 #define FirmwareVersion 261     // Firmware version used by OLED and GUI About.
-#define FirmwareSubVersion 30   // Now numeric in XXX.YY format.
+#define FirmwareSubVersion 31   // Now numeric in XXX.YY format.
 #define FirmwareVersion_Flag 4  // Set to 4 to tell 2025+ GUI to use new firmware Version/Subversion format for About.
 
 #define Multiplier 2            // Integer for REF/MEAS1/MEAS2/MEAS3 counts/cycle.  1 for rising edge; 2 for double clocking.  Used for TMR_CTRL_CM value.  Do NOT mess with that!
 
 #define Phase_8bit_Flag 2       // Tells 2025+ GUI to use 8 bit Phase values if Old_uMD_GUI set to 1, 16 bit Phase is the default.  There is no good reason to use 8 bit with the 2025+ GUI.
 #define REF_Sync 0              // Doesn't appear to be required for interpolation or anything else. ;-)  Leave at 0.
+
+#define Diagnostics 0           // 0 normal uMD2.
+                                // 1 for diagnostics inside uMD GUI but display may be strange with some data in axes 2 and 3 fields. ;-)
+                                // 2 for extended printout using Serial Monitor or terminal program but incompatible with uMD GUI.
 
 #ifdef OLED
 #include <U8x8lib.h> // Graphics library available though the Library Manager

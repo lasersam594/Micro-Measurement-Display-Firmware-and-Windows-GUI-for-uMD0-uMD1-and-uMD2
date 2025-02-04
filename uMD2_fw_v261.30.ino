@@ -39,10 +39,6 @@
 // provides sub-nm-scale resolution and precision (accuracy subject to enbironmental compensation) for slew rates of
 // around 0.01 mm/second or less and normal 79 or 158 nm resolution (depending on interferometer optics) above that.
 
-#define Diagnostics 0           // 0 normal uMD2.
-                                // 1 for diagnostics inside uMD GUI but display may be strange with some data in axes 2 and 3 fields. ;-)
-                                // 2 for extended printout using Serial Monitor or terminal program but incompatible with uMD GUI.
-
 #define Heterodyne 1            // Set to the number of axes for heterodyne, sample rate always 1 kHz.
 
 #define Interpolation 1         // O for none, 1 for enabled.
@@ -62,6 +58,10 @@
 
 #define Phase_8bit_Flag 2       // Tells 2025+ GUI to use 8 bit Phase values if Old_uMD_GUI set to 1, 16 bit Phase is the default.  There is no good reason to use 8 bit with the 2025+ GUI.
 #define REF_Sync 1              // May be required for interpolation
+
+#define Diagnostics 0           // 0 normal uMD2.
+                                // 1 for diagnostics inside uMD GUI but display may be strange with some data in axes 2 and 3 fields. ;-)
+                                // 2 for extended printout using Serial Monitor or terminal program but incompatible with uMD GUI.
 
 #ifdef OLED
 #include <U8x8lib.h> // Graphics library available though the Library Manager

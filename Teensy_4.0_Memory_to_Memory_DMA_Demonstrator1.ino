@@ -2,7 +2,7 @@
 //           Teensy 4.0 program to demonstrate DMA transfers from one memory buffer to another.           //
 //                Copyright® Jan Beck and Sam Goldwasser, 1994-2025, all rights reserved.                 //
 //      The code may be freely used or distributed for non-commercial (mostly) educational purposes.      // 
-//      Known issue: The time spent in DMA appears to be >15 times longer than should be possible.        //                                                                                                         //
+//       Known issue: The time spent in DMA appears to be >15 times longer than should be possible.       //                                                                                                         //
 //********************************************************************************************************//
 
 #include <Arduino.h>
@@ -44,21 +44,17 @@ void setup() {
   Serial.printf("words from source buffer to %d word destination buffer\n\n", BUFFER_SIZE);
   Serial.println("Source data: Hexidecimal random numbers; Destination initially filled with 0xDEADFEEDs");
 
-  // Load srcBuffer with random numbers
+  // Load srcBuffer with random numbers and destBuffer with DEADFEEDs
   for (int i = 0; i < BUFFER_SIZE; i++) {
-    srcBuffer[i] = rand() & 0xffffffff; // Generate constant length random number
-  }
-
-  // Load destBuffer with 0xDEADFEED to know if it has been overwritten
-  for (int i = 0; i < BUFFER_SIZE; i++) {
-    destBuffer[i] = 0xDEADFEED;
+    srcBuffer[i] = rand() & 0xffffffff;   // Cnstant length random number
+    destBuffer[i] = 0xDEADFEED;           // Fixed bogus value
   }
 
   // Initialize DMA
   dma.begin(true);
 
   dma.sourceBuffer(srcBuffer, BUFFER_SIZE);                 // BUFFER_SIZE doesn't appear to make a difference
-// dma.TCD->SOFF = 0;                                       // Don't increment source address to transfer from a single address
+//  dma.TCD->SOFF = 0;                                        // Don't increment source address to transfer from a single memory location
   dma.destinationBuffer(destBuffer, TRANSFER_SIZE * 4);     // Must be 4x?
   dma.disableOnCompletion();
   dma.attachInterrupt(dma_complete_isr);                    // Set up termination interrupt

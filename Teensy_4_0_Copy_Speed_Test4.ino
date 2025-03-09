@@ -1,5 +1,5 @@
 //********************************************************************************************************//
-//          Teensy 4.0 program to benchmark the speed of transfers from memory and GPIO to memory.        //
+//     Teensy 4.0 program to benchmark the speed of transfers from memory and GPIO to memory for uMD2.    //
 //            This version uses both c and assembly code, each instance believed to be optimal.           //
 //                Copyright® Jan Beck and Sam Goldwasser, 1994-2025, all rights reserved.                 //
 //      The code may be freely used or distributed for non-commercial (mostly) educational purposes.      // 
@@ -7,22 +7,23 @@
 
 #include <Arduino.h>
 
-#define Print_Analysis 0   // Print transition count, period, pin frequency if 1
-#define Print_Verbose 0    // Print verbose raw buffer data in Analysis if 1
-#define VERBOSE_SIZE 256  // # Values to print but see comments
+#define Print_Verbose 0    // If 1, print verbose raw buffer data
+#define VERBOSE_SIZE 256   // Number of values to print, but see comments on skipping
+#define Print_Analysis 0   // If 1, print transition counts, waveform periods (samples and duration), and pin frequencies
 
-// GPIO7 pins to monitor
-#define REF_Pin      0    // REF
-#define REFI_Pin     6    // REFI  
-#define MEAS1_Pin    9    // MEAS1  
-#define MEAS1I_Pin   8    // MEAS1I  
-#define MEAS2_Pin    10   // MEAS2  
-#define MEAS2I_Pin   11   // MEAS2I  
-#define MEAS3_Pin    14   // MEAS3  
-#define MEAS3I_Pin   12   // MEAS3I
+// GPIO pins to monitor.  Default uses GPIO7 and GPIO2 which are the same except for speed.
+//  They have REFI, MEAS1, MEAS1I, MEAS2I, and MEAS3I; REF and MEAS3 on GPIO6.
+#define REF_Pin       0   // REF     GPIO6 bit 03 0x8
+#define REFI_Pin      6   // REFI    GPIO7 bit 10 0x400
+#define MEAS1_Pin     9   // MEAS1   GPIO7 bit 11 0x800
+#define MEAS1I_Pin    8   // MEAS1I  GPIO7 bit 16 0x10000
+#define MEAS2_Pin    10   // MEAS2   GPIO7 bit 00 0x1
+#define MEAS2I_Pin   11   // MEAS2I  GPIO7 bit 02 0x4
+#define MEAS3_Pin    14   // MEAS3   GPIO6 bit 18 0x40000
+#define MEAS3I_Pin   12   // MEAS3I  GPIO7 bit 01 0x2
 
 // Create bitmasks for each pin
-const uint32_t REF_MASK = digitalPinToBitMask(REFI_Pin);
+const uint32_t REF_MASK = digitalPinToBitMask(REF_Pin);
 const uint32_t REFI_MASK = digitalPinToBitMask(REFI_Pin);
 const uint32_t MEAS1_MASK = digitalPinToBitMask(MEAS1_Pin);
 const uint32_t MEAS1I_MASK = digitalPinToBitMask(MEAS1I_Pin);
@@ -51,7 +52,8 @@ float Time_per_Period = 0;  // (ns)
 float Frequency = 0;        // (MHz)
 
 void Waveform_Copy_Assembly_Block() __attribute__((optimize("-O0"))); // For assembly copy
-void Waveform_Capture_Assembly_Block() __attribute__((optimize("-O0"))); // For assembly copy
+void Waveform_Capture_Assembly_Block1() __attribute__((optimize("-O0"))); // For assembly copy default using GPIO2_DR
+void Waveform_Capture_Assembly_Block2() __attribute__((optimize("-O0"))); // For assembly copy default using GPIO7_DR
 
 void setup() {
 
@@ -77,7 +79,7 @@ void setup() {
 
   // Initialize buffers with FAKE DATA (squarewave) and constant 0xDEADFEEDs
   for (int i = 0; i < BUFFER_SIZE; i++) {
-    if ((i & 0X20) == 0x20) srcBuffer[i] = ALL_PINS_MASK;     
+    if ((i & 0X20) == 0x20) srcBuffer[i] = REF_MASK;     
     else srcBuffer[i] = 0;
   }
 
@@ -94,15 +96,15 @@ void setup() {
   End_Time = micros();
   analyzeCapture();
 
-/***** GPIO1_DR to memory copy using c code *****/
+/***** GPIO2_DR to memory copy using c code *****/
 
-  Serial.printf("\n  GPIO1_DR to memory copy using c code:");
+  Serial.printf("\n  GPIO2_DR to memory copy using c code:");
 
   Start_Time = micros();
    for (int i = 0; i < BUFFER_SIZE; i++) {
       destBuffer[i] = GPIO2_DR;
   }
-  End_Time = micros();
+  End_Time = micros();  
   analyzeCapture();
 
 /***** GPIO7_DR to memory copy using c code *****/
@@ -122,7 +124,7 @@ void setup() {
 
   // Initialize buffers with FAKE DATA (squarewave) and constant 0xDEADFEEDs
   for (int i = 0; i < BUFFER_SIZE; i++) {
-    if ((i & 0X40) == 0x40) srcBuffer[i] = ALL_PINS_MASK;     
+    if ((i & 0X40) == 0x40) srcBuffer[i] = REF_MASK | MEAS1_MASK;     
     else srcBuffer[i] = 0;
   }
 
@@ -133,12 +135,21 @@ void setup() {
   End_Time = micros();
   analyzeCapture();
 
-/***** GPIO7_DR to memory copy using assembly code *****/
+/***** GPIO2_DR to memory copy using assembly code *****/
+
+  Serial.printf("\n  GPIO2_DR to memory copy using assembly code:");
+
+  Start_Time = micros();
+  Waveform_Capture_Assembly_Block1();
+  End_Time = micros();
+  analyzeCapture();
+
+  /***** GPIO7_DR to memory copy using assembly code *****/
 
   Serial.printf("\n  GPIO7_DR to memory copy using assembly code:");
 
   Start_Time = micros();
-  Waveform_Capture_Assembly_Block();
+  Waveform_Capture_Assembly_Block2();
   End_Time = micros();
   analyzeCapture();
 
@@ -174,7 +185,7 @@ void analyzeCapture() {
        
       // Print sample number and raw hex value
       Serial.printf("    %4d", i);
-      Serial.printf("   0x%06x", value);
+      Serial.printf("   0x%06X", value);
        
       // Extract and print individual pin values
       Serial.print("   ");
@@ -279,9 +290,10 @@ void Waveform_Copy_Assembly_Block() {
               );
 }
 
-void Waveform_Capture_Assembly_Block () {
+void Waveform_Capture_Assembly_Block1 () {
 
-  asm volatile("ldr    r8, =0x42004008 \n\t" // Load address of GPIO7_PSR into r8
+  // Read GPIO2 directly.
+  asm volatile("ldr    r8, =0x401BC008 \n\t" // Load address of GPIO2_DR into r8
                "mov    r9, %1          \n\t" // Copy address of array into r9, index = 0
                "mov    r10, r9         \n\t" // Copy r9 to r10 to start on end-of-loop-condition
                "ldr    r12, %0         \n\t" // Load Loop_Count into r12
@@ -289,12 +301,34 @@ void Waveform_Capture_Assembly_Block () {
                "subs   r12, r12, #4    \n\t" // Subtract 4 to reduce count by 1 since the loop does count+1
                "add    r10, r10, r12   \n\t" // Add it to r10 used for loop limit
                        
-  // Read GPIO7 directly
-    "nextdata:                         \n\t" //
+    "nextdata1:                        \n\t" //
                "ldr    r3, [r8]        \n\t" // Load value of GPIO7_PSR into r3
                "str    r3, [r9], #4    \n\t" // Store value into gpioDataArray and then add 4 bytes to the index
                "cmp    r9, r10         \n\t" // Check loop counter against loop limit
-               "ble    nextdata        \n\t" // Loop if limit not reached
+               "ble    nextdata1       \n\t" // Loop if limit not reached
+
+               : "=m" (TRANSFER_COUNT)          // Output operand list
+               : "r" (destBuffer)               // Input operand list
+               : "r3", "r8", "r9", "r10", "r12" // Clobber list
+              );
+}
+
+void Waveform_Capture_Assembly_Block2 () {
+
+  // Read GPIO7 directly.
+  asm volatile("ldr    r8, =0x42004008 \n\t" // Load address of GPIO7_DR into r8
+               "mov    r9, %1          \n\t" // Copy address of array into r9, index = 0
+               "mov    r10, r9         \n\t" // Copy r9 to r10 to start on end-of-loop-condition
+               "ldr    r12, %0         \n\t" // Load Loop_Count into r12
+               "lsls   r12, r12, #2    \n\t" // Shift left by 2 => multiply by 4
+               "subs   r12, r12, #4    \n\t" // Subtract 4 to reduce count by 1 since the loop does count+1
+               "add    r10, r10, r12   \n\t" // Add it to r10 used for loop limit
+                       
+    "nextdata2:                        \n\t" //
+               "ldr    r3, [r8]        \n\t" // Load value of GPIO7_PSR into r3
+               "str    r3, [r9], #4    \n\t" // Store value into gpioDataArray and then add 4 bytes to the index
+               "cmp    r9, r10         \n\t" // Check loop counter against loop limit
+               "ble    nextdata2       \n\t" // Loop if limit not reached
 
                : "=m" (TRANSFER_COUNT)          // Output operand list
                : "r" (destBuffer)               // Input operand list

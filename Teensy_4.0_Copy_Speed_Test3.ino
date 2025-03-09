@@ -1,5 +1,5 @@
 //********************************************************************************************************//
-//          Teensy 4.0 program to demonstrate speed of transfers from memory and GPIO to memory.         //
+//         Teensy 4.0 program to demonstrate the speed of transfers from memory and GPIO to memory.       //
 //                Copyright® Jan Beck and Sam Goldwasser, 1994-2025, all rights reserved.                 //
 //      The code may be freely used or distributed for non-commercial (mostly) educational purposes.      // 
 //********************************************************************************************************//
@@ -41,7 +41,7 @@ DMAMEM static uint32_t destBuffer[BUFFER_SIZE] __attribute__((aligned(32))); // 
 uint32_t Start_Time = 0;    // Measure time in microseonds spent in transfer
 uint32_t End_Time = 0;
 uint32_t Elapsed_Time = 0;  // End Time - Start Time
-uint32_t Period = 0;        // Number of transfers between edges
+float Period = 0;           // Average number of transfers between edges
 float Time_per_Copy = 0;    // Nanoseconds
 float Time_per_Period = 0;  // Nanoseconds
 float Frequency = 0;        // MHz
@@ -92,7 +92,9 @@ void setup() {
   Time_per_Copy /= (TRANSFER_SIZE / 1000);
   Serial.printf("  Time per Copy = ");
   Serial.print(Time_per_Copy);
-  Serial.printf(" ns.\n");
+  Serial.printf(" ns.  Transfer Rate = ");
+  Serial.print(1000 / Time_per_Copy);
+  Serial.printf(" MW/s.\n");
 
   analyzeCapture();
 
@@ -116,8 +118,9 @@ void setup() {
   Time_per_Copy /= (TRANSFER_SIZE / 1000);
   Serial.printf("  Time per Copy = ");
   Serial.print(Time_per_Copy);
-  Serial.printf(" ns.\n");
-
+  Serial.printf(" ns.  Transfer Rate = ");
+  Serial.print(1000 / Time_per_Copy);
+  Serial.printf(" MW/s.\n");
   analyzeCapture();
 
 /***** GPIO7_DR to Memory Copy *****/
@@ -140,8 +143,9 @@ void setup() {
   Time_per_Copy /= (TRANSFER_SIZE / 1000);
   Serial.printf("  Time per Copy = ");
   Serial.print(Time_per_Copy);
-  Serial.printf(" ns.\n");
-
+  Serial.printf(" ns.  Transfer Rate = ");
+  Serial.print(1000 / Time_per_Copy);
+  Serial.printf(" MW/s.\n");
   analyzeCapture();
 
    // Process and display the data
@@ -218,22 +222,25 @@ void analyzeCapture() {
   }
 
  // Print transition counts
-  Serial.println("\n    Pin      Transitions  Samples/Period  Frequency");
-  Serial.println("   ------------------------------------------------------");
+  Serial.print("  \n                 Pin       <---- Period ---->       Pin");
+  Serial.println("\n    Pin      Transitions   Samples   Duration    Frequency");
+  Serial.println("   --------------------------------------------------------");
   
   for (int pin = 0; pin < 8; pin++) {
     Serial.print("    ");
     Serial.print(pinNames[pin]);
     Serial.printf("   \t%4d", transitions[pin]);
     if (transitions[pin] != 0) {
-      Period = 2 * TRANSFER_SIZE / transitions[pin];
-      Serial.printf("          %4d        ", Period);
-      Time_per_Period = Period * Time_per_Copy;
-      Frequency = 1000 / Time_per_Period;
-      Serial.print(Frequency);    
+      Serial.printf("        ");
+      Period = 2 * TRANSFER_SIZE;
+      Serial.print(Period /= transitions[pin]);
+      Serial.printf("    ");
+      Serial.print(Time_per_Period = Period * Time_per_Copy);
+      Serial.print(" ns   ");
+      Serial.print(1000 / Time_per_Period);    
       Serial.println(" MHz");
     }
-    else Serial.println("            NA           NA");
+    else Serial.println("          -         -           -");
   }  
 }
 

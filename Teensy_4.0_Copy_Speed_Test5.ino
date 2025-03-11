@@ -101,9 +101,9 @@ void setup() {
   End_Time = micros();
   analyzeCapture();
 
-/***** GPIO2_DR to memory copy using c code *****/
+/***** GPIO2_PSR to memory copy using c code *****/
 
-  Serial.printf("\n  GPIO2_DR to memory copy using c code:");
+  Serial.printf("\n  GPIO2_PSR to memory copy using c code:");
 
   Start_Time = micros();
    for (int i = 0; i < BUFFER_SIZE; i++) {
@@ -112,9 +112,9 @@ void setup() {
   End_Time = micros();  
   analyzeCapture();
 
-/***** GPIO7_DR to memory copy using c code *****/
+/***** GPIO7_PSR to memory copy using c code *****/
 
-  Serial.printf("\n  GPIO7_DR to memory copy using c code:");
+  Serial.printf("\n  GPIO7_PSR to memory copy using c code:");
 
   Start_Time = micros();
    for (int i = 0; i < BUFFER_SIZE; i++) {
@@ -141,9 +141,9 @@ void setup() {
   End_Time = micros();
   analyzeCapture();
 
-/***** GPIO2_DR to memory copy using assembly code *****/
+/***** GPIO2_PSR to memory copy using assembly code *****/
 
-  Serial.printf("\n  GPIO2_DR to memory copy using assembly code:");
+  Serial.printf("\n  GPIO2_PSR to memory copy using assembly code:");
 
   gpio_base = 0x401BC008;
   gpio_base_ptr = (unsigned int*)gpio_base;  // Cast integer to pointer
@@ -152,9 +152,9 @@ void setup() {
   End_Time = micros();
   analyzeCapture();
 
-  /***** GPIO7_DR to memory copy using assembly code *****/
+  /***** GPIO7_PSR to memory copy using assembly code *****/
 
-  Serial.printf("\n  GPIO7_DR to memory copy using assembly code:");
+  Serial.printf("\n  GPIO7_PSR to memory copy using assembly code:");
 
   Start_Time = micros();
   gpio_base = 0x42004008;
@@ -165,7 +165,7 @@ void setup() {
 
 /***** End *****/
 
-  Serial.println("\nTest complete.\n\n");
+  Serial.println("\nTests complete.\n\n");
 }
 
 // Analysis of the captured data edge count, period in edges, and frequency in MHz
@@ -248,12 +248,12 @@ void analyzeCapture() {
   }
 
   // Print transition counts
-  Serial.print("  \n                 Pin       <---- Period ---->       Pin");
-  Serial.println("\n    Pin      Transitions   Samples   Duration    Frequency");
-  Serial.println("   --------------------------------------------------------");
+  Serial.print("\n                  Pin       <---- Period ---->       Pin");
+  Serial.println("\n     Pin      Transitions   Samples   Duration    Frequency");
+  Serial.println("    --------------------------------------------------------");
   
   for (int pin = 0; pin < 8; pin++) {
-    Serial.print("    ");
+    Serial.print("     ");
     Serial.print(pinNames[pin]);
     Serial.printf("   \t%4d", transitions[pin]);
     if (transitions[pin] != 0) {
@@ -290,7 +290,7 @@ void Waveform_Capture_Assembly_Block1 (unsigned int* base) {
                "beq nextdata2          \n\t" // Use increment for buffer copy
 
     "nextdata1:                        \n\t" // GPIO capture
-               "ldr    r3, [r8]        \n\t" // Load value of GPIO_DR into r3
+               "ldr    r3, [r8]        \n\t" // Load value of GPIO_PSR into r3
                "str    r3, [r9], #4    \n\t" // Store value into gpioDataArray and then add 4 bytes to the index
                "cmp    r9, r10         \n\t" // Check loop counter against loop limit
                "ble    nextdata1       \n\t" // Loop if limit not reached
